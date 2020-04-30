@@ -1,0 +1,10 @@
+
+.DS_Store
+
+__init__.py
+
+venv/
+
+__pycache__/
+
+.idea/
