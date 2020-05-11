@@ -17,11 +17,12 @@ if __name__ == '__main__':
     N = 50  # TODO: Try changing the number of basis functions to see how it affects the output.
 
     ###DMP
-    dmp = PositionDMP(n_bfs=N, alpha=48.0)
-    dmp.train(demo_p, t, tau)
+    odmp = ObstacleDMP(n_bfs=N, alpha=48.0)
+    odmp.train(demo_p, t, tau)
 
-    ###train regular DMP (done early so we can place obstacles along its path)
-    dmp_p, dmp_dp, dmp_ddp = dmp.rollout(t, tau)
+    ###generate path without obstacles
+    dmp_p, dmp_dp, dmp_ddp = odmp.rollout(t, tau)
+
 
     ###ADDING SOME OBSTACLES
     obstacles = []
@@ -31,19 +32,12 @@ if __name__ == '__main__':
     #for p in range(600, 1751, 150):
     #    obstacles.append(dmp_p[p])
 
-
     ###HARD CODED GOOD OBSTACLES
     #obstacles.append([0.53623471, 0.38135131, 0.43055046])
-    #obstacles.append([0.52626427, 0.41151957, 0.43269037])
+    obstacles.append([0.52626427, 0.41151957, 0.43269037])
     #obstacles.append([0.70712357, 0.16850636, 0.29812683])
-    obstacles.append([0.63440407, 0.19807578, 0.43654489])
+    #obstacles.append([0.63440407, 0.19807578, 0.43654489])
     #obstacles.append([0.61440407, 0.19807578, 0.43654489])
-
-
-    #DMP WITH OBSTACLE AVOIDANCE
-    odmp = ObstacleDMP(n_bfs=N, alpha=48.0, obstacles=obstacles)
-    odmp.train(demo_p, t, tau)
-
 
     # TODO: different starting point
     #dmp.p0 = [0.7, 0.2, 0.6]
@@ -56,10 +50,8 @@ if __name__ == '__main__':
     # TODO: different time constant:
     #tau = tau * 0.5
 
-
-    # Train DMP with obstacle avoidance
-    odmp_p, odmp_dp, odmp_ddp, av = odmp.rollout(t, tau)
-
+    #generate path with obstacle avoidance
+    odmp_p, odmp_dp, odmp_ddp, av, obsv, axii = odmp.rollout(t, tau, obstacles)
 
     # 2D plot the ODMP and DMP against the original demonstration
     fig1, axs = plt.subplots(3, 1, sharex=True)
@@ -129,7 +121,7 @@ if __name__ == '__main__':
     ax.plot3D(dmp_p[:, 0], dmp_p[:, 1], dmp_p[:, 2], label='DMP')
     ax.plot3D(odmp_p[:, 0], odmp_p[:, 1], odmp_p[:, 2], label='ODMP')
     for obs in obstacles:
-        ax.plot([obs[0]], [obs[1]], [obs[2]], markerfacecolor='k', markeredgecolor='k', marker='*', markersize=5, alpha=0.6)
+        ax.plot([obs[0]], [obs[1]], [obs[2]], markerfacecolor='k', markeredgecolor='k', marker='*', markersize=5, alpha=0.6, label="obstacle")
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -137,9 +129,48 @@ if __name__ == '__main__':
     ax.legend()
 
     av = av/100
+    av = np.nan_to_num(av)
     av = av[::10]
     odmp_p = odmp_p[::10]
     ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], av[:,0], av[:,1], av[:,2], color="red")
     plt.suptitle("Positions and avoidance acceleration")
+
+
+
+
+
+
+    #TODO: DEBUGGERY!!!!!!!!!!!!!!!!!
+    figrep = plt.figure(2, figsize=(16, 10))
+    ax = plt.axes(projection='3d')
+    ax.plot3D(odmp_p[:, 0], odmp_p[:, 1], odmp_p[:, 2], label='ODMP')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.legend()
+    plt.suptitle("DEBUG")
+    plt.xlim(0.3, 0.9)
+    plt.ylim(0, 0.6)
+    ax.set_zlim(0, 0.6)
+
+    #plot the obstacle
+    for obs in obstacles:
+        ax.plot([obs[0]], [obs[1]], [obs[2]], markerfacecolor='k', markeredgecolor='k', marker='*', markersize=5, alpha=0.6, label="obstacle")
+
+    av = av[::10]
+    odmp_p = odmp_p[::10]
+    axii = axii[::100]
+    odmp_dp = odmp_dp[::100]
+    obsv = obsv[::100]
+
+    av = av / (np.absolute(av).sum(axis=1)[:, np.newaxis])/50
+    axii = axii / (np.absolute(axii).sum(axis=1)[:, np.newaxis])/50
+    odmp_dp = odmp_dp / (np.absolute(odmp_dp).sum(axis=1)[:, np.newaxis])/50
+    obsv = obsv / (np.absolute(obsv).sum(axis=1)[:, np.newaxis])/50
+    #plot the arrows
+    ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], axii[:,0], axii[:,1], axii[:,2], color="green")
+    ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], obsv[:,0], obsv[:,1], obsv[:,2], color="black")
+    ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], odmp_dp[:,0], odmp_dp[:,1], odmp_dp[:,2], color="blue")
+    ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], av[:,0], av[:,1], av[:,2], color="red")
 
     plt.show()

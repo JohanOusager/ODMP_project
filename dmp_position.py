@@ -88,8 +88,12 @@ class PositionDMP():
         dt = np.gradient(ts)[:,np.newaxis]
 
         # Scaling factor
+        Dp_inv = 0
         self.Dp = np.diag(self.gp - self.p0)
-        Dp_inv = np.linalg.inv(self.Dp)
+        try:
+            Dp_inv = np.linalg.inv(self.Dp)
+        except:
+            Dp_inv = np.linalg.pinv(self.Dp)
 
         # Desired velocities and accelerations
         d_p = np.gradient(p, axis=0) / dt

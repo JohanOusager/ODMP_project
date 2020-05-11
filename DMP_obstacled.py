@@ -4,21 +4,16 @@ from scipy.spatial.transform import Rotation as rot
 
 class ObstacleDMP(PositionDMP):
 
-    def __init__(self, n_bfs=10, alpha=48.0, beta=None, cs_alpha=None, cs=None, obstacles=None):
+    def __init__(self, n_bfs=10, alpha=48.0, beta=None, cs_alpha=None, cs=None):
         super().__init__(n_bfs, alpha, beta, cs_alpha, cs)
 
-        if obstacles is not None:
-            self.obstacles = obstacles
-        else:
-            self.obstacles = []
 
-    def step(self, x, dt, tau):
+    def step(self, x, dt, tau, obstacles=None):
         def fp(xj):
             psi = np.exp(-self.h * (xj - self.c) ** 2)
             return self.Dp.dot(self.w.dot(psi) / psi.sum() * xj)
 
         # DMP system acceleration
-        # TODO: add the obstacle term
         def avoidance(obs, gamma=1000, beta=20/np.pi): #beta 20/pi is default
             if all(self.dp == 0):
                 return 0
@@ -43,11 +38,12 @@ class ObstacleDMP(PositionDMP):
         self.ddp = (self.alpha * (self.beta * (self.gp - self.p) - tau * self.dp) + fp(x)) / tau
 
         self.avoidance_term = [0, 0, 0]
-        for obs in self.obstacles:
-            # TODO: bigger gamma for bigger objects???
-            # TODO: moving objects
-            # TODO: tune gamma value
-            self.avoidance_term += avoidance(obs, gamma=4000, beta=20/np.pi) / tau
+        if obstacles:
+            for obs in obstacles:
+                # TODO: bigger gamma for bigger objects???
+                # TODO: moving objects
+                # TODO: tune gamma value
+                self.avoidance_term += avoidance(obs, gamma=4000, beta=20/np.pi) / tau
 
         self.ddp += self.avoidance_term
 
@@ -57,9 +53,13 @@ class ObstacleDMP(PositionDMP):
         # Integrate velocity to obtain position
         self.p += self.dp * dt
 
-        return self.p, self.dp, self.ddp, self.avoidance_term
+        if obstacles:
+            return self.p, self.dp, self.ddp, self.avoidance_term, obstacles[0]-self.p, np.cross(obstacles[0] - self.p,  self.dp)
+        else:
+            return self.p, self.dp, self.ddp
 
-    def rollout(self, ts, tau):
+
+    def rollout(self, ts, tau, obstacles=None):
         self.reset()
 
         if np.isscalar(tau):
@@ -73,8 +73,16 @@ class ObstacleDMP(PositionDMP):
         dp = np.empty((n_steps, 3))
         ddp = np.empty((n_steps, 3))
         av = np.empty((n_steps, 3))
+        obsv = np.empty((n_steps, 3))
+        ax = np.empty((n_steps, 3))
 
-        for i in range(n_steps):
-            p[i], dp[i], ddp[i], av[i] = self.step(x[i], dt[i], tau[i])
+        if obstacles:
+            for i in range(n_steps):
+                p[i], dp[i], ddp[i], av[i], obsv[i], ax[i] = self.step(x[i], dt[i], tau[i], obstacles)
+            return p, dp, ddp, av, obsv, ax
 
-        return p, dp, ddp, av
+        else:
+            for i in range(n_steps):
+                p[i], dp[i], ddp[i] = self.step(x[i], dt[i], tau[i])
+            return p, dp, ddp
+
