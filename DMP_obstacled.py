@@ -19,7 +19,9 @@ class ObstacleDMP(PositionDMP):
                 return 0
 
             #phi is the rotation angle from dp to (p - obs)
-            phi = np.arccos(np.transpose(obs - self.p) * self.dp / np.dot(np.abs(obs - self.p), np.abs(self.dp)) )
+            #phi = np.arccos(np.transpose(obs - self.p) * self.dp / np.dot(np.abs(obs - self.p), np.abs(self.dp)) )
+            #Inigos math:
+            phi = np.arccos(np.transpose(obs-self.p) * self.dp/(np.linalg.norm(obs-self.p)*np.linalg.norm(self.dp)))
 
             #dphi determines the magnitude of the avoidance force
             #dphi = c_1 * phi * exp(-c_2 * abs(phi))
