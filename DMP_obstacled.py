@@ -15,17 +15,15 @@ class ObstacleDMP(PositionDMP):
 
         # DMP system acceleration
         def avoidance(obs, gamma=1000, beta=20/np.pi): #beta 20/pi is default
-            if all(self.dp == 0):
+            if all(np.isclose(self.dp, 0)):
                 return 0
 
             #phi is the rotation angle from dp to (p - obs)
-            #phi = np.arccos(np.transpose(obs - self.p) * self.dp / np.dot(np.abs(obs - self.p), np.abs(self.dp)) )
-            #Inigos math:
             phi = np.arccos(np.transpose(obs-self.p) * self.dp/(np.linalg.norm(obs-self.p)*np.linalg.norm(self.dp)))
 
             #dphi determines the magnitude of the avoidance force
-            #dphi = c_1 * phi * exp(-c_2 * abs(phi))
-            dphi = gamma * phi * np.exp(-beta * phi)
+            #dphi = c_1 * phi * exp(-c_2 * abs(phi)
+            dphi = gamma * phi * np.exp(-beta * np.linalg.norm(phi))
 
             #R determines the direction of the force
             #R: axis = crossproduct((obs - p),  dp), rotation = pi/2
@@ -45,7 +43,7 @@ class ObstacleDMP(PositionDMP):
                 # TODO: bigger gamma for bigger objects???
                 # TODO: moving objects
                 # TODO: tune gamma value
-                self.avoidance_term += avoidance(obs, gamma=4000, beta=20/np.pi) / tau
+                self.avoidance_term += avoidance(obs, gamma=50000, beta=10/np.pi) / tau
 
         self.ddp += self.avoidance_term
 
