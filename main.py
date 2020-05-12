@@ -26,18 +26,18 @@ if __name__ == '__main__':
 
     ###ADDING SOME OBSTACLES
     obstacles = []
-   # for p in range(500, 1751, 200):
-   #     obstacles.append(demo_p[p])
+    for p in range(500, 1751, 200):
+        obstacles.append(demo_p[p])
 
-    #for p in range(600, 1751, 150):
-    #    obstacles.append(dmp_p[p])
+    for p in range(600, 1751, 150):
+        obstacles.append(dmp_p[p])
 
     ###HARD CODED GOOD OBSTACLES
-    #obstacles.append([0.53623471, 0.38135131, 0.43055046])
+    obstacles.append([0.53623471, 0.38135131, 0.43055046])
     obstacles.append([0.52626427, 0.41151957, 0.43269037])
-    #obstacles.append([0.70712357, 0.16850636, 0.29812683])
-    #obstacles.append([0.63440407, 0.19807578, 0.43654489])
-    #obstacles.append([0.61440407, 0.19807578, 0.43654489])
+    obstacles.append([0.70712357, 0.16850636, 0.29812683])
+    obstacles.append([0.63440407, 0.19807578, 0.43654489])
+    obstacles.append([0.61440407, 0.19807578, 0.43654489])
 
     # TODO: different starting point
     #dmp.p0 = [0.7, 0.2, 0.6]
@@ -107,6 +107,33 @@ if __name__ == '__main__':
 
     plt.suptitle("Avoidance acceleration")
 
+    # 2D plot the ODMP and DMP distance to obstacles
+    distances = []
+    for point in odmp_p:
+        M_dist = 9999
+        for obstacle in obstacles:
+            dist = np.linalg.norm(point - obstacles)
+            if dist < M_dist:
+                M_dist = dist
+        distances = np.append(distances, M_dist)
+
+    natural_distances = []
+    for point in dmp_p:
+        M_dist = 9999
+        for obstacle in obstacles:
+            dist = np.linalg.norm(point - obstacles)
+            if dist < M_dist:
+                M_dist = dist
+        natural_distances = np.append(natural_distances, M_dist)
+
+    figdist = plt.figure(7, figsize=(16, 10))
+    plt.plot(t, natural_distances, label='DMP')
+    plt.plot(t, distances, label='ODMP')
+    plt.xlabel('t (s)')
+    plt.ylabel('distance (m)')
+    plt.legend()
+    plt.suptitle("Distance to nearest obstacle")
+
 
     #plot 3D paths with illustrative avoidance acceleration vectors
     fig4 = plt.figure(4, figsize=(16, 10))
@@ -135,13 +162,9 @@ if __name__ == '__main__':
     ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], av[:,0], av[:,1], av[:,2], color="red")
     plt.suptitle("Positions and avoidance acceleration")
 
-
-
-
-
-
+    """
     #TODO: DEBUGGERY!!!!!!!!!!!!!!!!!
-    figrep = plt.figure(2, figsize=(16, 10))
+    figrep = plt.figure(9, figsize=(16, 10))
     ax = plt.axes(projection='3d')
     ax.plot3D(odmp_p[:, 0], odmp_p[:, 1], odmp_p[:, 2], label='ODMP')
     ax.set_xlabel('X')
@@ -172,5 +195,6 @@ if __name__ == '__main__':
     ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], obsv[:,0], obsv[:,1], obsv[:,2], color="black")
     ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], odmp_dp[:,0], odmp_dp[:,1], odmp_dp[:,2], color="blue")
     ax.quiver(odmp_p[:,0], odmp_p[:,1], odmp_p[:,2], av[:,0], av[:,1], av[:,2], color="red")
+    """
 
     plt.show()
